@@ -1,12 +1,8 @@
-# TensorFlow and tf.keras
 import tensorflow as tf
 from tensorflow import keras
 
-# Helper libraries
-import numpy as np
-import matplotlib.pyplot as plt
-
 import os
+import pickle
 
 # fashion_mnist = keras.datasets.fashion_mnist
 #
@@ -18,14 +14,27 @@ import os
 # train_images = train_images / 255.0
 # test_images = test_images / 255.0
 
+dataset = pickle.load(open("datasets/data.pickle", "rb"))
 
+features = dataset['features']
+labels = dataset['labels']
+Nhistory = dataset['Nhistory']
+
+train_features = features[:5000]
+train_labels = labels[:5000]
+
+test_features = features
+test_labels = labels
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 model = keras.Sequential([
-    keras.layers.Flatten(input_shape=(28, 28)),
-    keras.layers.Dense(20, activation=tf.nn.relu),
-    keras.layers.Dense(10, activation=tf.nn.softmax)
+    keras.layers.Flatten(input_shape=(Nhistory, 6)),
+    #keras.layers.Dense(6, activation=tf.nn.tanh),
+    #keras.layers.Dense(20, activation=tf.nn.tanh),
+    #keras.layers.Dense(10, activation=tf.nn.tanh),
+    keras.layers.Dense(5, activation=tf.nn.sigmoid),
+    #keras.layers.Dense(5, activation=tf.nn.sigmoid)
 ])
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -39,20 +48,24 @@ model.compile(
 checkpoint_path = "net/cp.ckpt"
 checkpoint_dir = os.path.dirname(checkpoint_path)
 
-model.load_weights(checkpoint_path)
+if (os.path.isfile(checkpoint_path)):
+    model.load_weights(checkpoint_path)
 
 cp_callback = tf.keras.callbacks.ModelCheckpoint(checkpoint_path, save_weights_only=True, verbose=1)
 
 model.fit(
-    train_images[:5000], train_labels[:5000], epochs=5,
-    validation_data= (test_images, test_labels),
-    callbacks=[cp_callback]
+    train_features, train_labels, epochs=7,
+    validation_data= (train_features, train_labels),
+    callbacks=[cp_callback],
+    batch_size=20
 )
 
 #~~~~~~~~~~~~~~~~~
 
-test_loss, test_accuarcy = model.evaluate(test_images, test_labels)
+test_loss, test_accuarcy = model.evaluate(test_features, test_labels)
 
-print("Test accuracy", test_accuarcy)
+print("Test accuracy", str(int(test_accuarcy * 100)) + "%")
 
 #~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+print(model.summary())
