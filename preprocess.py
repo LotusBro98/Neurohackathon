@@ -2,29 +2,46 @@ import json
 import pickle
 import numpy as np
 
-datafile = open("datasets/238.json", "rt")
+datafile = open("datasets/alexpan1.json", "rt")
 datastr = datafile.read()
 datafile.close()
 
-datastr = datastr.replace("}\n  {\"sample\"", "},\n  {\"sample\"")
+#datastr = datastr.replace("}\n  {\"sample\"", "},\n  {\"sample\"")
 
 dataset = json.loads(datastr)
 dataset = dataset['DATABLOCK']
 
-dataset = dataset[50000:]
+#dataset = dataset[10000:50000]
 
 features = []
 labels = []
-Nhistory = 1
+Nhistory = 100
+
 for i in range(Nhistory, len(dataset)):
     inData = dataset[i - Nhistory: i]
-    target = True
-    for entry in inData:
-        if entry['data'][0] != entry['data'][1]:
-            target = False
 
-    #if target == False:
-    #    continue
+    zeros = False
+    for line in inData:
+        if (line['data'][0] == 0):
+            zeros = True
+
+    target = False
+    for j in range(1, min(Nhistory, 10)):
+        line1 = inData[j - 1]
+        line2 = inData[j]
+        if (line2['data'][0] == line2['data'][1] and line2['data'][1] != line1['data'][1]):
+            target = True
+
+    if (zeros or not target):
+        continue
+
+    #
+    # if (inData[-1]['data'][0] == inData[-1]['data'][1]):
+    #     label = 1
+    # else:
+    #     label = 0
+
+    label = inData[-1]['data'][0]
 
     features.append(
         np.vstack([
@@ -33,9 +50,9 @@ for i in range(Nhistory, len(dataset)):
         ])
     )
 
-    print(i, "/", len(dataset))
+    labels.append(label)
 
-    labels.append(inData[-1]['data'][0])
+    print(i, "/", len(dataset))
 
 features = np.asarray(features)
 labels = np.asarray(labels)
